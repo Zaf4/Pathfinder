@@ -78,6 +78,8 @@ Light and dark mode follow your system setting.
 
 ![Dark mode](docs/screenshots/dark-3-maze.png)
 
+<sub>Screenshots show real mouse data: Overall & Kempermann (2019), [figshare](https://doi.org/10.6084/m9.figshare.10248158.v3), CC BY 4.0.</sub>
+
 ## What changed from the original
 
 - New Qt (PySide6) interface in three steps: Data → Maze → Results. It doesn't freeze during analysis, and you can cancel.
