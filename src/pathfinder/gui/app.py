@@ -26,10 +26,29 @@ from .widgets import StepButton, Worker, collect_garbage_on_gui_thread, label
 
 ASSETS = Path(__file__).parent / "assets"
 REPO = "https://github.com/Zaf4/Pathfinder"
-# A plain zip download: installing from git would need git, which a stock Mac doesn't have
-# (calling it pops the "install command line developer tools" dialog).
-SOURCE = f"jsl-pathfinder @ {REPO}/archive/refs/heads/master.zip"
-WIN_INSTALLER = "https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.ps1"
+# Updates follow published releases (tags), never the development branch.
+LATEST_RELEASE_API = "https://api.github.com/repos/Zaf4/Pathfinder/releases/latest"
+
+
+def release_source(tag: str) -> str:
+    # A plain zip download: installing from git would need git, which a stock Mac doesn't have
+    # (calling it pops the "install command line developer tools" dialog).
+    return f"jsl-pathfinder @ {REPO}/archive/{tag}.zip"
+
+
+def windows_installer(tag: str) -> str:
+    return f"https://raw.githubusercontent.com/Zaf4/Pathfinder/{tag}/install.ps1"
+
+
+def version_key(v: str) -> tuple:
+    """'2.1.0' -> (2, 1, 0); a leading 'v' and any suffix such as 'rc1' are ignored."""
+    import re
+    m = re.match(r"\d+(?:\.\d+)*", v.strip().lstrip("vV"))
+    return tuple(int(x) for x in m.group().split(".")) if m else ()
+
+
+def is_newer(tag: str, current: str = __version__) -> bool:
+    return bool(version_key(tag)) and version_key(tag) > version_key(current)
 WIKI = "https://github.com/MatthewBCooke/Pathfinder/wiki"
 CITATION = ("Cooke MB, O'Leary TP, Harris P, et al. (2019) Pathfinder: open source software for analyzing "
             "spatial navigation search strategies. F1000Research 8:1521. "
@@ -240,44 +259,73 @@ class MainWindow(QMainWindow):
 
     # ---------------------------------------------------------- updates
     def check_updates(self):
-        if sys.platform == "win32":
-            return self._update_windows()
-        uv = shutil.which("uv") or str(Path.home() / ".local/bin/uv")
-        if not os.path.exists(uv):
-            QDesktopServices.openUrl(QUrl(REPO))
-            return
-        self.proc = QProcess(self)
-        self.proc.setProcessChannelMode(QProcess.MergedChannels)
+        """Ask GitHub for the latest release; install it only if it is newer than this version."""
+        from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest
         self.update_box = QProgressDialog("Checking for updates…", None, 0, 0, self)
         self.update_box.setWindowTitle("Pathfinder")
         self.update_box.setMinimumDuration(0)
         self.update_box.show()
-        self.proc.finished.connect(self._updated)
-        self.proc.start(uv, ["tool", "install", "--force", "--refresh-package", "jsl-pathfinder",
-                             "--managed-python", "--python", "3.13", SOURCE])
+        # Qt's network stack uses the system certificates (Python's urllib may not on a Mac)
+        self.net = QNetworkAccessManager(self)
+        req = QNetworkRequest(QUrl(LATEST_RELEASE_API))
+        req.setRawHeader(b"Accept", b"application/vnd.github+json")
+        req.setTransferTimeout(15000)
+        self.update_reply = self.net.get(req)
+        self.update_reply.finished.connect(self._got_release)
 
-    def _updated(self, code, _status):
-        import re
+    def _got_release(self):
+        from PySide6.QtNetwork import QNetworkReply
+        reply = self.update_reply
+        reply.deleteLater()
+        tag = ""
+        if reply.error() == QNetworkReply.NoError:
+            try:
+                tag = str(json.loads(bytes(reply.readAll()).decode()).get("tag_name") or "")
+            except ValueError:
+                tag = ""
+        if not tag:
+            self.update_box.close()
+            show_error(self, "Couldn't check for updates", "Check your internet connection and try again.",
+                       reply.errorString())
+            return
+        if not is_newer(tag):
+            self.update_box.close()
+            QMessageBox.information(self, "Pathfinder", f"You have the latest version ({__version__}).")
+            return
+        if sys.platform == "win32":
+            self.update_box.close()
+            return self._update_windows(tag)
+        uv = shutil.which("uv") or str(Path.home() / ".local/bin/uv")
+        if not os.path.exists(uv):
+            self.update_box.close()
+            QDesktopServices.openUrl(QUrl(f"{REPO}/releases/latest"))
+            return
+        self.update_box.setLabelText(f"Installing Pathfinder {tag}…")
+        self.proc = QProcess(self)
+        self.proc.setProcessChannelMode(QProcess.MergedChannels)
+        self.proc.finished.connect(lambda code, _status: self._updated(code, tag))
+        self.proc.start(uv, ["tool", "install", "--force", "--refresh-package", "jsl-pathfinder",
+                             "--managed-python", "--python", "3.13", release_source(tag)])
+
+    def _updated(self, code, tag):
         self.update_box.close()
         out = bytes(self.proc.readAll()).decode(errors="replace")
-        found = re.findall(r"jsl-pathfinder==([\w.+-]+)", out)
         if code != 0:
-            show_error(self, "Couldn't check for updates", "Check your internet connection and try again.", out)
-        elif found and found[-1] != __version__:
-            QMessageBox.information(self, "Pathfinder updated",
-                                    f"Version {found[-1]} was installed. Quit and reopen Pathfinder to use it.")
+            show_error(self, "Couldn't install the update", "Check your internet connection and try again.", out)
         else:
-            QMessageBox.information(self, "Pathfinder", f"You have the latest version ({__version__}).")
+            QMessageBox.information(self, "Pathfinder updated",
+                                    f"Version {tag} was installed. Quit and reopen Pathfinder to use it.")
 
-    def _update_windows(self):
+    def _update_windows(self, tag):
         """Windows locks the files of a running program, so update after we quit, then reopen."""
         ok = QMessageBox.question(self, "Update Pathfinder",
-                                  "Pathfinder will close, download the latest version and reopen by itself.\n\n"
-                                  "This takes about a minute.", QMessageBox.Ok | QMessageBox.Cancel)
+                                  f"Pathfinder {tag} is available. Pathfinder will close, download it and "
+                                  "reopen by itself.\n\nThis takes about a minute.",
+                                  QMessageBox.Ok | QMessageBox.Cancel)
         if ok != QMessageBox.Ok:
             return
         cmd = (f"Wait-Process -Id {os.getpid()} -ErrorAction SilentlyContinue; "
-               f"irm {WIN_INSTALLER} | iex")
+               f"$env:PATHFINDER_REF = '{tag}'; irm {windows_installer(tag)} | iex")
         QProcess.startDetached("powershell", ["-NoProfile", "-ExecutionPolicy", "ByPass",
                                               "-WindowStyle", "Minimized", "-Command", cmd])
         QApplication.quit()

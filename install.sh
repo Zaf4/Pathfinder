@@ -1,17 +1,19 @@
 #!/bin/sh
 # Pathfinder installer for macOS and Linux.
 #
-#   curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.sh | sh
+#   curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/install.sh | sh
 #
 # Installs uv (a small Python manager) and Pathfinder into your home folder.
 # No administrator password, Homebrew, conda, git or Xcode needed. Run it again to update.
 set -eu
 
 REPO="https://github.com/Zaf4/Pathfinder"
-BRANCH="${PATHFINDER_BRANCH:-master}"
+# The release this script installs (a tag). PATHFINDER_REF (or PATHFINDER_BRANCH) picks another
+# tag or a branch, e.g. PATHFINDER_REF=master for the latest development version.
+REF="${PATHFINDER_REF:-${PATHFINDER_BRANCH:-2.1.0}}"
 # A zip download on purpose: a git URL would need git, and on a stock Mac merely calling git
 # pops up "install the command line developer tools" and the install fails.
-SOURCE="${PATHFINDER_SOURCE:-jsl-pathfinder @ ${REPO}/archive/refs/heads/${BRANCH}.zip}"
+SOURCE="${PATHFINDER_SOURCE:-jsl-pathfinder @ ${REPO}/archive/${REF}.zip}"
 PY="3.13"
 
 bold() { printf '\033[1m%s\033[0m\n' "$1"; }
@@ -60,7 +62,7 @@ EOF
   if [ -n "$ICNS" ]; then
     cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
   else
-    curl -fsSL "https://raw.githubusercontent.com/Zaf4/Pathfinder/${BRANCH}/src/pathfinder/gui/assets/AppIcon.icns" \
+    curl -fsSL "https://raw.githubusercontent.com/Zaf4/Pathfinder/${REF}/src/pathfinder/gui/assets/AppIcon.icns" \
       -o "$APP/Contents/Resources/AppIcon.icns" 2>/dev/null || true
   fi
   VERSION="$("$UV" tool list 2>/dev/null | awk '/^jsl-pathfinder/ {sub(/^v/, "", $2); print $2}')"

@@ -1,6 +1,6 @@
 # Remove Pathfinder from Windows (keeps your "Pathfinder Results" folder and keeps uv).
 #
-#   powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/master/uninstall.ps1 | iex"
+#   powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/uninstall.ps1 | iex"
 #
 # Also used by Settings > Apps > Pathfinder > Uninstall.
 
