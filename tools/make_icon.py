@@ -67,7 +67,7 @@ if __name__ == "__main__":
         for base in (16, 32, 128, 256, 512):
             render(base).save(str(iconset / f"icon_{base}x{base}.png"))
             render(base * 2).save(str(iconset / f"icon_{base}x{base}@2x.png"))
-        subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(ROOT / "installer/AppIcon.icns")],
+        subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(ROOT / "src/pathfinder/gui/assets/AppIcon.icns")],
                        check=True)
         shutil.rmtree(iconset.parent)
     print("icons written")

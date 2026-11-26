@@ -39,7 +39,8 @@ class DropZone(QFrame):
         s = label("A folder with one file per trial (or one WaterMaze export). You can also pick a single file.",
                   "Muted", wrap=True)
         s.setAlignment(Qt.AlignCenter)
-        s.setMaximumWidth(420)
+        s.setFixedWidth(440)
+        s.setMinimumHeight(s.heightForWidth(440) + 4)
         lay.addWidget(s, 0, Qt.AlignHCenter)
         self.folder_btn = QPushButton("Choose Folder…")
         self.folder_btn.setObjectName("Primary")
