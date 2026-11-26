@@ -318,7 +318,8 @@ class MazePage(QWidget):
         self.gy.setValue(round(g.goal_y, 2))
         self._loading = False
         self._changed()
-        self.detect_note.setText("Estimated from where the animals swam. Check the drawing and drag the goal "
+        self.detect_note.setText("Estimated from where the trials ended (where the animals found the platform). "
+                                 "Check the drawing and drag the goal "
                                  "if it's not quite right.")
 
     def _check(self):

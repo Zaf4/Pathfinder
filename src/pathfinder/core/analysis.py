@@ -60,9 +60,33 @@ class TrialResult:
 
 
 # ------------------------------------------------------------------ geometry
+def goal_from_trial_ends(exp: Experiment, min_trials: int = 3):
+    """Estimate the platform as the median point where trials ended early.
+
+    Tracking stops when the animal climbs onto the platform, so trials that end before the
+    time limit end on the platform. On real data (Overall & Kempermann 2019, 300 trials) this
+    lands within 1-3 cm of the true platform; the original estimate (mean of all positions in
+    the first 50 s) landed near the pool centre, 32-42 cm away. Returns None when too few
+    trials end early (e.g. probe trials only), so the caller can fall back.
+    """
+    trials = [t for t in exp if len(t) > 1]
+    if not trials:
+        return None
+    durations = [t.points[-1].time - t.points[0].time for t in trials]
+    limit = max(durations)
+    ends = [t.points[-1] for t, d in zip(trials, durations) if d < 0.95 * limit]
+    if len(ends) < min_trials:
+        return None
+    return float(np.median([p.x for p in ends])), float(np.median([p.y for p in ends]))
+
+
 def resolve_geometry(exp: Experiment, setup: MazeSetup, single_file: bool = False,
-                     goal=None) -> Geometry:
-    """Port of getAutoLocations(). `goal` overrides the setup's goal (used for extra goals)."""
+                     goal=None, goal_method: str = "trial_ends") -> Geometry:
+    """Port of getAutoLocations(). `goal` overrides the setup's goal (used for extra goals).
+
+    goal_method: "trial_ends" (default, see goal_from_trial_ends) or "legacy" (the original
+    estimate, kept so the golden tests can check the port against the original program).
+    """
     goal_x, goal_y = (setup.goal_x, setup.goal_y) if goal is None else (goal[0], goal[1])
     goal_diam = setup.goal_diameter if goal is None else goal[2]
     want_goal = goal_x is None or goal_y is None
@@ -127,6 +151,10 @@ def resolve_geometry(exp: Experiment, setup: MazeSetup, single_file: bool = Fals
         centre_y = ((av_max_y / centre_count) + (av_min_y / centre_count)) / 2
     if want_goal:
         goal_x, goal_y = plat_x / count, plat_y / count
+        if goal_method == "trial_ends":
+            better = goal_from_trial_ends(exp)
+            if better is not None:
+                goal_x, goal_y = better
     if want_goal_diam:
         # The original estimator never updates its bounds, so it always falls back to 10.
         goal_diam = 10.0

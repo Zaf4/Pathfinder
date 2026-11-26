@@ -31,7 +31,8 @@ def results_root() -> Path:
 
 
 def safe_name(s: str) -> str:
-    return re.sub(r"[^\w\- .]+", "_", s).strip() or "Results"
+    # keep what's safe in file names on macOS/Windows/Linux (incl. parentheses, commas, &)
+    return re.sub(r"[^\w\- .(),&+'\[\]]+", "_", s).strip(" .") or "Results"
 
 
 class AppState(QObject):

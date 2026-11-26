@@ -1,0 +1,16 @@
+{
+  "source": "Overall RW & Kempermann G (2019) Water maze tracking data. figshare. https://doi.org/10.6084/m9.figshare.10248158.v3 (CC BY 4.0)",
+  "pool_diameter_cm": 120.0,
+  "goals": {
+    "acquisition": {
+      "x": -7.428,
+      "y": -32.302,
+      "diameter": 12.63
+    },
+    "reversal": {
+      "x": 4.277,
+      "y": 32.978,
+      "diameter": 12.63
+    }
+  }
+}

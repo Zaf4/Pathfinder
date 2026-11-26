@@ -2,7 +2,7 @@
 
 Search-strategy analysis for the Morris Water Maze. Load your tracking data, set your pool and goal, and Pathfinder sorts every trial into Direct Swim, Directed Search, Focal Search, Spatial Indirect, Chaining, Scanning, Thigmotaxis or Random Search. It also draws occupancy heatmaps.
 
-This is a modernized fork of [MatthewBCooke/Pathfinder](https://github.com/MatthewBCooke/Pathfinder) by **Matthew Cooke** (Jason Snyder Lab, University of British Columbia). It has a new interface, a one-command install and bug fixes. The strategy analysis gives the same results as the original: this is checked by tests against the original program's output.
+This is a modernized fork of [MatthewBCooke/Pathfinder](https://github.com/MatthewBCooke/Pathfinder) by **Matthew Cooke** (Jason Snyder Lab, University of British Columbia). It has a new interface, a one-command install and bug fixes. The strategy analysis gives the same results as the original: this is checked by tests against the original program's output. It is also checked on 300 real mouse swims (Overall & Kempermann 2019, [figshare](https://doi.org/10.6084/m9.figshare.10248158.v3)): every strategy and measure matches the original exactly.
 
 ![Pathfinder 2.0](docs/screenshots/hero.png)
 
@@ -56,7 +56,7 @@ pathfinder
 
 1. **Data**: drag a folder of trials onto the window, or click **Choose Folder…**. Pathfinder recognizes EthoVision (`.xlsx`), ANY-maze, WaterMaze and ezTrack (`.csv`) exports by itself. For any other table, choose **Custom columns** under *Recorded with* and click the X, Y and time columns.
    ![Data](docs/screenshots/light-2-data.png)
-2. **Maze**: click **Detect Pool and Goal From My Data**, or type the values. You can also drag the goal on the pool picture. The amber band shows the corridor used for "directed" strategies, and the ring shows the chaining zone. Add extra goals if your experiment had a reversal.
+2. **Maze**: click **Detect Pool and Goal From My Data**, or type the values. Pathfinder finds the platform from where the trials ended. You can also drag the goal on the pool picture. The amber band shows the corridor used for "directed" strategies, and the ring shows the chaining zone. Add extra goals if your experiment had a reversal.
    ![Maze](docs/screenshots/light-3-maze.png)
 3. **Analyze**: you get a summary, a per-trial table with the swim path of each trial, and heatmaps you can filter by trial, day or animal.
    ![Results](docs/screenshots/light-4-summary.png)

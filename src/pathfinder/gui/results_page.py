@@ -254,7 +254,8 @@ class ResultsPage(QWidget):
         ax.set_xlabel("Trial number (per animal)", color=t.muted)
         ax.set_ylabel("% of swims", color=t.muted)
         ax.set_ylim(0, 100)
-        ax.set_xticks(xs)
+        step = 1 if len(xs) <= 12 else (2 if len(xs) <= 24 else 5)  # keep labels readable
+        ax.set_xticks([x for x in xs if (x - xs[0]) % step == 0])
         ax.tick_params(colors=t.muted)
         for s in ("top", "right"):
             ax.spines[s].set_visible(False)
