@@ -1,6 +1,6 @@
 # Pathfinder installer for Windows 10/11.
 #
-#   powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.ps1 | iex"
+#   powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/install.ps1 | iex"
 #
 # Installs uv (a small Python manager) and Pathfinder into your user folder, then adds
 # Pathfinder to the Start menu, the desktop and Settings > Apps. No administrator rights,
@@ -14,10 +14,12 @@ function Install-Pathfinder {
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
     $Repo   = 'https://github.com/Zaf4/Pathfinder'
-    $Branch = if ($env:PATHFINDER_BRANCH) { $env:PATHFINDER_BRANCH } else { 'master' }
-    $Source = if ($env:PATHFINDER_SOURCE) { $env:PATHFINDER_SOURCE } else { "jsl-pathfinder @ $Repo/archive/refs/heads/$Branch.zip" }
+    # The release this script installs (a tag). PATHFINDER_REF (or PATHFINDER_BRANCH) picks
+    # another tag or a branch, e.g. 'master' for the latest development version.
+    $Ref    = if ($env:PATHFINDER_REF) { $env:PATHFINDER_REF } elseif ($env:PATHFINDER_BRANCH) { $env:PATHFINDER_BRANCH } else { '2.1.0' }
+    $Source = if ($env:PATHFINDER_SOURCE) { $env:PATHFINDER_SOURCE } else { "jsl-pathfinder @ $Repo/archive/$Ref.zip" }
     $Py     = '3.13'
-    $Raw    = "https://raw.githubusercontent.com/Zaf4/Pathfinder/$Branch"
+    $Raw    = "https://raw.githubusercontent.com/Zaf4/Pathfinder/$Ref"
 
     function Step($text) { Write-Host ''; Write-Host "==> $text" -ForegroundColor Cyan }
     function Fail($text) {
