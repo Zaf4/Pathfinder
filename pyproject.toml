@@ -1,0 +1,53 @@
+[project]
+name = "jsl-pathfinder"
+version = "2.0.0"
+description = "Morris Water Maze search strategy analysis"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Matthew Cooke" },
+    { name = "Jason Snyder Lab, University of British Columbia" },
+]
+requires-python = ">=3.10"
+keywords = ["morris water maze", "search strategy", "spatial navigation", "neuroscience"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "PySide6-Essentials>=6.7",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+entropy = ["oct2py>=5.6"]
+
+[project.gui-scripts]
+pathfinder = "pathfinder.gui.app:main"
+
+[project.urls]
+Homepage = "https://github.com/Zaf4/Pathfinder"
+Upstream = "https://github.com/MatthewBCooke/Pathfinder"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-qt>=4.4",
+    "pytest-timeout>=2.4.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pathfinder"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
