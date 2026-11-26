@@ -27,3 +27,5 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 dist/
+!tests/fixtures/**
+!tests/golden/*.csv

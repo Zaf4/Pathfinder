@@ -1,0 +1,2 @@
+Trial,Name,Trial Code,Strategy,IPE,Velocity,Distance covered,Average distance to goal,Average heading error,Percent of maze traversed,Latency,Score,Initial heading error,Entropy,Distance to swim path centroid,Average distance to centre of maze,Percent in angular corridor,Percent in annulus zone,Percent in smaller thigmotaxis zone,Percent in full thigmotaxis zone,Strategy (manual)
+1,trial01_A1_direct.csv,None 0 1,Direct Path,114.59,32.02,176.12,55.1,1.92,11,5.5,3,2.031924941196701,0,27.94,30.35,0.96,0.36,0.02,0.09,
