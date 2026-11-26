@@ -50,8 +50,12 @@ jobs:
           plutil -lint "$APP/Contents/Info.plist"
           codesign --verify --verbose "$APP"
           ! xattr -r "$APP" | grep -q com.apple.quarantine
-          open "$APP"
-          sleep 25
+          sw_vers
+          open --stdout "$RUNNER_TEMP/app.out" --stderr "$RUNNER_TEMP/app.err" "$APP"; echo "open exit: $?"
+          sleep 40
+          echo "--- app stdout/stderr"; cat "$RUNNER_TEMP/app.out" "$RUNNER_TEMP/app.err" 2>/dev/null || true
+          echo "--- crash reports"; ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | tail -5 || true
+          log show --last 2m --style compact --predicate 'eventMessage CONTAINS[c] "pathfinder"' 2>/dev/null | tail -25 || true
           screencapture -x "$RUNNER_TEMP/macos.png" || true
           ps axo pid,command | grep -i -e pathfinder | grep -v grep || true
           lsappinfo list | grep -A4 '"Pathfinder"' || true
