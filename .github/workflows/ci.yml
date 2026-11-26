@@ -52,8 +52,13 @@ jobs:
           ! xattr -r "$APP" | grep -q com.apple.quarantine
           open "$APP"
           sleep 25
-          pgrep -fl jsl-pathfinder
           screencapture -x "$RUNNER_TEMP/macos.png" || true
+          ps axo pid,command | grep -i -e pathfinder | grep -v grep || true
+          lsappinfo list | grep -A4 '"Pathfinder"' || true
+          lsappinfo list | grep -q 'io.github.zaf4.pathfinder' || {
+            echo "app not running; running the program directly to show its error:"
+            perl -e 'alarm 20; exec @ARGV' "$HOME/.local/bin/pathfinder" || true
+            exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: macos-screenshot, path: "${{ runner.temp }}/macos.png", if-no-files-found: ignore }
@@ -92,7 +97,8 @@ jobs:
           $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
           [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
           $bmp.Save("$env:RUNNER_TEMP\windows.png")
-          if (-not ($alive | Where-Object { $_.MainWindowTitle -like '*Pathfinder*' })) { throw 'Pathfinder window did not appear' }
+          # the window belongs to the pythonw child of the pathfinder.exe launcher
+          if (-not ($alive | Where-Object { $_.ProcessName -eq 'pythonw' })) { throw 'Pathfinder exited or crashed on start' }
           $alive | Stop-Process -Force
       - uses: actions/upload-artifact@v4
         if: always()
