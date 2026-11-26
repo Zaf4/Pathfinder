@@ -30,3 +30,4 @@ dist/
 !tests/fixtures/**
 !tests/golden/*.csv
 !src/pathfinder/gui/assets/*.png
+!docs/screenshots/*.png
