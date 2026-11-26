@@ -42,8 +42,14 @@ Darwin)
   APP="$HOME/Applications/Pathfinder.app"
   rm -rf "$APP"
   mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+  # The launcher is a script, and macOS may start script-based apps under Rosetta (Intel
+  # emulation) on Apple Silicon. The installed Python and libraries are native arm64, so
+  # they'd fail to load and the app would quietly not open. Always run natively.
   cat > "$APP/Contents/MacOS/Pathfinder" <<EOF
 #!/bin/sh
+if [ "\$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ]; then
+  exec /usr/bin/arch -arm64 "$BIN" "\$@"
+fi
 exec "$BIN" "\$@"
 EOF
   chmod +x "$APP/Contents/MacOS/Pathfinder"
@@ -70,6 +76,8 @@ EOF
   <key>CFBundleShortVersionString</key><string>${VERSION:-2.0}</string>
   <key>CFBundleVersion</key><string>${VERSION:-2.0}</string>
   <key>LSMinimumSystemVersion</key><string>11.0</string>
+  <key>LSArchitecturePriority</key><array><string>arm64</string><string>x86_64</string></array>
+  <key>LSRequiresNativeExecution</key><true/>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSRequiresAquaSystemAppearance</key><false/>
 </dict>
