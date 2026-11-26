@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Qt system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      - run: uv run pytest -q
+
+  install-macos:
+    name: One-line install (macOS, no git)
+    runs-on: macos-latest
+    steps:
+      - name: Make git unavailable (a stock Mac has no developer tools)
+        run: |
+          mkdir -p "$RUNNER_TEMP/trap"
+          printf '#!/bin/sh\necho "git was called: $*" >> "%s/trap/log"\nexit 1\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/trap/git"
+          chmod +x "$RUNNER_TEMP/trap/git"
+      - name: Install with the README command
+        env:
+          PATHFINDER_BRANCH: ${{ github.head_ref || github.ref_name }}
+          PATHFINDER_NO_OPEN: "1"
+        run: |
+          export PATH="$RUNNER_TEMP/trap:$PATH"
+          # uv may already exist on the runner; hide it so the installer fetches its own
+          export PATH="$(echo "$PATH" | tr ':' '\n' | grep -v -e '\.cargo' -e 'uv' | paste -sd: -)"
+          curl -LsSf "https://raw.githubusercontent.com/Zaf4/Pathfinder/$PATHFINDER_BRANCH/install.sh" | sh
+      - name: Check
+        run: |
+          test ! -f "$RUNNER_TEMP/trap/log" || { cat "$RUNNER_TEMP/trap/log"; exit 1; }
+          APP="$HOME/Applications/Pathfinder.app"
+          test -x "$APP/Contents/MacOS/Pathfinder"
+          test -s "$APP/Contents/Resources/AppIcon.icns"
+          plutil -lint "$APP/Contents/Info.plist"
+          codesign --verify --verbose "$APP"
+          ! xattr -r "$APP" | grep -q com.apple.quarantine
+          sw_vers
+          open --stdout "$RUNNER_TEMP/app.out" --stderr "$RUNNER_TEMP/app.err" "$APP"; echo "open exit: $?"
+          sleep 40
+          echo "--- app stdout/stderr"; cat "$RUNNER_TEMP/app.out" "$RUNNER_TEMP/app.err" 2>/dev/null || true
+          echo "--- crash reports"; ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | tail -5 || true
+          log show --last 2m --style compact --predicate 'eventMessage CONTAINS[c] "pathfinder"' 2>/dev/null | tail -25 || true
+          screencapture -x "$RUNNER_TEMP/macos.png" || true
+          ps axo pid,command | grep -i -e pathfinder | grep -v grep || true
+          lsappinfo list | grep -A4 '"Pathfinder"' || true
+          lsappinfo list | grep -q 'io.github.zaf4.pathfinder' || {
+            echo "app not running; running the program directly to show its error:"
+            perl -e 'alarm 20; exec @ARGV' "$HOME/.local/bin/pathfinder" || true
+            exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: macos-screenshot, path: "${{ runner.temp }}/macos.png", if-no-files-found: ignore }
+
+  install-windows:
+    name: One-line install (Windows PowerShell 5.1)
+    runs-on: windows-latest
+    steps:
+      - name: Install with the README command
+        shell: powershell
+        env:
+          PATHFINDER_BRANCH: ${{ github.head_ref || github.ref_name }}
+          PATHFINDER_NO_OPEN: "1"
+          PATHFINDER_NO_PAUSE: "1"
+        run: |
+          $env:Path = ($env:Path -split ';' | Where-Object { $_ -notmatch 'uv|cargo' }) -join ';'
+          irm "https://raw.githubusercontent.com/Zaf4/Pathfinder/$env:PATHFINDER_BRANCH/install.ps1" | iex
+      - name: Check shortcuts, Apps entry and launch
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Join-Path $HOME '.local\bin\pathfinder.exe'
+          if (-not (Test-Path $exe)) { throw 'pathfinder.exe missing' }
+          foreach ($d in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Desktop'))) {
+            if (-not (Test-Path (Join-Path $d 'Pathfinder.lnk'))) { throw "shortcut missing in $d" }
+          }
+          $k = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Pathfinder'
+          Write-Host "Apps entry: $($k.DisplayName) $($k.DisplayVersion)"
+          if (-not (Test-Path $k.DisplayIcon)) { throw 'icon missing' }
+          $p = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 30
+          $alive = Get-Process | Where-Object { $_.Path -like '*jsl-pathfinder*' -or $_.Id -eq $p.Id }
+          $alive | Format-Table Id, ProcessName, MainWindowTitle -AutoSize
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save("$env:RUNNER_TEMP\windows.png")
+          # the window belongs to the pythonw child of the pathfinder.exe launcher
+          if (-not ($alive | Where-Object { $_.ProcessName -eq 'pythonw' })) { throw 'Pathfinder exited or crashed on start' }
+          $alive | Stop-Process -Force
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: windows-screenshot, path: "${{ runner.temp }}/windows.png", if-no-files-found: ignore }
+      - name: Uninstall
+        shell: powershell
+        run: |
+          irm "https://raw.githubusercontent.com/Zaf4/Pathfinder/${{ github.head_ref || github.ref_name }}/uninstall.ps1" | iex
+          if (Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) 'Pathfinder.lnk')) { throw 'shortcut left behind' }
+          if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Pathfinder') { throw 'Apps entry left behind' }

@@ -21,11 +21,15 @@ from .data_page import DataPage
 from .dialogs import SettingsDialog, show_error
 from .maze_page import MazePage
 from .results_page import ResultsPage, reveal
-from .state import AppState, documents_dir, safe_name
+from .state import AppState, results_root, safe_name
 from .widgets import StepButton, Worker, collect_garbage_on_gui_thread, label
 
 ASSETS = Path(__file__).parent / "assets"
 REPO = "https://github.com/Zaf4/Pathfinder"
+# A plain zip download: installing from git would need git, which a stock Mac doesn't have
+# (calling it pops the "install command line developer tools" dialog).
+SOURCE = f"jsl-pathfinder @ {REPO}/archive/refs/heads/master.zip"
+WIN_INSTALLER = "https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.ps1"
 WIKI = "https://github.com/MatthewBCooke/Pathfinder/wiki"
 CITATION = ("Cooke MB, O'Leary TP, Harris P, et al. (2019) Pathfinder: open source software for analyzing "
             "spatial navigation search strategies. F1000Research 8:1521. "
@@ -209,7 +213,7 @@ class MainWindow(QMainWindow):
             self.state.set_params(dlg.params)
 
     def show_results_folder(self):
-        d = self.state.output_dir or documents_dir()
+        d = self.state.output_dir or results_root()
         d.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(d)))
 
@@ -236,6 +240,8 @@ class MainWindow(QMainWindow):
 
     # ---------------------------------------------------------- updates
     def check_updates(self):
+        if sys.platform == "win32":
+            return self._update_windows()
         uv = shutil.which("uv") or str(Path.home() / ".local/bin/uv")
         if not os.path.exists(uv):
             QDesktopServices.openUrl(QUrl(REPO))
@@ -247,18 +253,34 @@ class MainWindow(QMainWindow):
         self.update_box.setMinimumDuration(0)
         self.update_box.show()
         self.proc.finished.connect(self._updated)
-        self.proc.start(uv, ["tool", "upgrade", "jsl-pathfinder"])
+        self.proc.start(uv, ["tool", "install", "--force", "--refresh-package", "jsl-pathfinder",
+                             "--managed-python", "--python", "3.13", SOURCE])
 
     def _updated(self, code, _status):
+        import re
         self.update_box.close()
         out = bytes(self.proc.readAll()).decode(errors="replace")
+        found = re.findall(r"jsl-pathfinder==([\w.+-]+)", out)
         if code != 0:
             show_error(self, "Couldn't check for updates", "Check your internet connection and try again.", out)
-        elif "Updated" in out or "Upgraded" in out:
+        elif found and found[-1] != __version__:
             QMessageBox.information(self, "Pathfinder updated",
-                                    "A new version was installed. Quit and reopen Pathfinder to use it.")
+                                    f"Version {found[-1]} was installed. Quit and reopen Pathfinder to use it.")
         else:
             QMessageBox.information(self, "Pathfinder", f"You have the latest version ({__version__}).")
+
+    def _update_windows(self):
+        """Windows locks the files of a running program, so update after we quit, then reopen."""
+        ok = QMessageBox.question(self, "Update Pathfinder",
+                                  "Pathfinder will close, download the latest version and reopen by itself.\n\n"
+                                  "This takes about a minute.", QMessageBox.Ok | QMessageBox.Cancel)
+        if ok != QMessageBox.Ok:
+            return
+        cmd = (f"Wait-Process -Id {os.getpid()} -ErrorAction SilentlyContinue; "
+               f"irm {WIN_INSTALLER} | iex")
+        QProcess.startDetached("powershell", ["-NoProfile", "-ExecutionPolicy", "ByPass",
+                                              "-WindowStyle", "Minimized", "-Command", cmd])
+        QApplication.quit()
 
     # ---------------------------------------------------------- run
     def run(self):
@@ -370,6 +392,12 @@ def _macos_app_name(name: str):
 def main():
     os.environ.setdefault("QT_API", "pyside6")
     _macos_app_name("Pathfinder")
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Zaf4.Pathfinder")
+        except Exception:  # noqa: BLE001 - cosmetic only
+            pass
     QApplication.setApplicationName("Pathfinder")
     QApplication.setApplicationDisplayName("Pathfinder")
     QApplication.setOrganizationName("Pathfinder")

@@ -1,6 +1,8 @@
 """Step 3: results, swim paths and heatmaps."""
 from __future__ import annotations
 
+import sys
+
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -60,7 +62,7 @@ class ResultsPage(QWidget):
         self.open_btn = QPushButton("Open Spreadsheet")
         self.open_btn.setObjectName("Primary")
         self.open_btn.clicked.connect(self.open_csv)
-        self.finder_btn = QPushButton("Show in Finder")
+        self.finder_btn = QPushButton({"darwin": "Show in Finder", "win32": "Show in Explorer"}.get(sys.platform, "Show Folder"))
         self.finder_btn.clicked.connect(lambda: reveal(self.sets[self.current][3]))
         head.addWidget(self.finder_btn, 0, Qt.AlignTop)
         head.addWidget(self.open_btn, 0, Qt.AlignTop)
@@ -204,7 +206,7 @@ class ResultsPage(QWidget):
         self.goal_pick.setVisible(len(sets) > 1)
         self.goal_pick.blockSignals(False)
         out = self.state.output_dir
-        self.where.setText(f"Saved in Documents › Pathfinder › {out.name}" if out else "")
+        self.where.setText(f"Saved in your home folder › {out.parent.name} › {out.name}" if out else "")
         self._setup_heatmap_controls()
         self._pick_set(0)
 
@@ -252,7 +254,8 @@ class ResultsPage(QWidget):
         ax.set_xlabel("Trial number (per animal)", color=t.muted)
         ax.set_ylabel("% of swims", color=t.muted)
         ax.set_ylim(0, 100)
-        ax.set_xticks(xs)
+        step = 1 if len(xs) <= 12 else (2 if len(xs) <= 24 else 5)  # keep labels readable
+        ax.set_xticks([x for x in xs if (x - xs[0]) % step == 0])
         ax.tick_params(colors=t.muted)
         for s in ("top", "right"):
             ax.spines[s].set_visible(False)

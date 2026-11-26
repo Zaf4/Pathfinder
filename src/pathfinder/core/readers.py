@@ -123,7 +123,7 @@ def read_anymaze(filename: str) -> list[Trial]:
         for row in reader:
             for i, v in enumerate(row):
                 columns[i].append(v)
-    trial = Trial(name=filename.split("/")[-1], source=filename)
+    trial = Trial(name=os.path.basename(filename), source=filename)
     # NOTE: like the original, the first row after the header is skipped.
     for time, x, y in zip(columns[0][1:], columns[1][1:], columns[2][1:]):
         try:
@@ -179,7 +179,7 @@ def read_eztrack(filename: str) -> list[Trial]:
         fps_c, frame_c, x_c, y_c = cols["FPS"], cols["Frame"], cols["X"], cols["Y"]
     except KeyError as e:
         raise ReadError(f"{Path(filename).name} is missing the ezTrack column {e}.") from e
-    trial = Trial(name=filename.split("/")[-1], source=filename)
+    trial = Trial(name=os.path.basename(filename), source=filename)
     for row in rows[1:]:
         try:
             t = float(row[frame_c]) / float(row[fps_c])
@@ -198,7 +198,7 @@ def read_table(filename: str) -> pd.DataFrame:
 
 def read_custom(filename: str, cols: CustomColumns) -> list[Trial]:
     table = read_table(filename)
-    trial = Trial(name=filename.split("/")[-1], source=filename)
+    trial = Trial(name=os.path.basename(filename), source=filename)
     for _, row in table.iloc[cols.start_row:].iterrows():
         try:
             x = float(row[cols.x_col])

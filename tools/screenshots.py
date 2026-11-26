@@ -19,7 +19,7 @@ app = QApplication(sys.argv)
 from pathfinder.gui import app as appmod, state, theme  # noqa: E402
 
 tmp = Path(tempfile.mkdtemp())
-state.documents_dir = lambda: tmp / "Pathfinder"
+state.results_root = lambda: tmp / "Pathfinder"
 state.config_dir = lambda: tmp
 
 

@@ -4,12 +4,14 @@
 #   curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.sh | sh
 #
 # Installs uv (a small Python manager) and Pathfinder into your home folder.
-# No administrator password, Homebrew, conda or Xcode needed. Run it again to update.
+# No administrator password, Homebrew, conda, git or Xcode needed. Run it again to update.
 set -eu
 
 REPO="https://github.com/Zaf4/Pathfinder"
 BRANCH="${PATHFINDER_BRANCH:-master}"
-SOURCE="${PATHFINDER_SOURCE:-git+${REPO}@${BRANCH}}"
+# A zip download on purpose: a git URL would need git, and on a stock Mac merely calling git
+# pops up "install the command line developer tools" and the install fails.
+SOURCE="${PATHFINDER_SOURCE:-jsl-pathfinder @ ${REPO}/archive/refs/heads/${BRANCH}.zip}"
 PY="3.13"
 
 bold() { printf '\033[1m%s\033[0m\n' "$1"; }
@@ -30,7 +32,9 @@ UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
 [ -x "$UV" ] || fail "uv was not installed."
 
 step "2/3  Installing Pathfinder (first time takes a minute)"
-"$UV" tool install --force --python "$PY" "$SOURCE" || fail "installing Pathfinder failed."
+# --managed-python: always uv's own Python. A python.org "framework" Python on the Mac would
+# otherwise be reused, and it relaunches itself as "Python.app" (wrong Dock icon and name).
+"$UV" tool install --force --refresh-package jsl-pathfinder --managed-python --python "$PY" "$SOURCE" || fail "installing Pathfinder failed."
 BIN="$("$UV" tool dir --bin)/pathfinder"
 [ -x "$BIN" ] || fail "the pathfinder program is missing after install."
 
@@ -40,8 +44,14 @@ Darwin)
   APP="$HOME/Applications/Pathfinder.app"
   rm -rf "$APP"
   mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+  # The launcher is a script, and macOS may start script-based apps under Rosetta (Intel
+  # emulation) on Apple Silicon. The installed Python and libraries are native arm64, so
+  # they'd fail to load and the app would quietly not open. Always run natively.
   cat > "$APP/Contents/MacOS/Pathfinder" <<EOF
 #!/bin/sh
+if [ "\$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ]; then
+  exec /usr/bin/arch -arm64 "$BIN" "\$@"
+fi
 exec "$BIN" "\$@"
 EOF
   chmod +x "$APP/Contents/MacOS/Pathfinder"
@@ -68,11 +78,17 @@ EOF
   <key>CFBundleShortVersionString</key><string>${VERSION:-2.0}</string>
   <key>CFBundleVersion</key><string>${VERSION:-2.0}</string>
   <key>LSMinimumSystemVersion</key><string>11.0</string>
+  <key>LSArchitecturePriority</key><array><string>arm64</string><string>x86_64</string></array>
+  <key>LSRequiresNativeExecution</key><true/>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSRequiresAquaSystemAppearance</key><false/>
 </dict>
 </plist>
 EOF
+  # Built on this Mac (nothing downloaded is quarantined), but make sure Gatekeeper never asks:
+  # clear any quarantine flag and give the bundle a local ad-hoc signature.
+  xattr -cr "$APP" 2>/dev/null || true
+  codesign --force --sign - "$APP" >/dev/null 2>&1 || true
   # refresh Finder/Launchpad so the icon shows up right away
   touch "$APP"
   LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
@@ -82,12 +98,14 @@ EOF
 Linux)
   DESK="$HOME/.local/share/applications"
   mkdir -p "$DESK"
+  ICON="$(find "$("$UV" tool dir)/jsl-pathfinder" -name icon_256.png -print -quit 2>/dev/null || true)"
   cat > "$DESK/pathfinder.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Pathfinder
 Comment=Morris Water Maze search strategy analysis
 Exec=$BIN %F
+Icon=${ICON:-pathfinder}
 Terminal=false
 Categories=Science;Education;
 EOF
@@ -100,7 +118,7 @@ esac
 
 printf '\n\033[1;32m✓ Pathfinder is installed.\033[0m\n'
 echo "  Open it from $WHERE."
-echo "  Your results will be saved in Documents/Pathfinder."
+echo "  Your results will be saved in the \"Pathfinder Results\" folder in your home folder."
 echo "  To update later, run this same command again (or use Help → Check for Updates)."
 
 if [ "$(uname -s)" = "Darwin" ] && [ -z "${PATHFINDER_NO_OPEN:-}" ]; then

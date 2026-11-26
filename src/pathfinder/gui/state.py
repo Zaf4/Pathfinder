@@ -21,12 +21,18 @@ def config_dir() -> Path:
     return p
 
 
-def documents_dir() -> Path:
-    return Path(QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation)) / "Pathfinder"
+RESULTS_FOLDER = "Pathfinder Results"
+
+
+def results_root() -> Path:
+    """Where results go. The home folder itself is not permission-guarded on macOS
+    (Documents/Desktop/Downloads are, and writing there pops a privacy prompt)."""
+    return Path.home() / RESULTS_FOLDER
 
 
 def safe_name(s: str) -> str:
-    return re.sub(r"[^\w\- .]+", "_", s).strip() or "Results"
+    # keep what's safe in file names on macOS/Windows/Linux (incl. parentheses, commas, &)
+    return re.sub(r"[^\w\- .(),&+'\[\]]+", "_", s).strip(" .") or "Results"
 
 
 class AppState(QObject):
@@ -78,7 +84,7 @@ class AppState(QObject):
 
     # ---------------------------------------------------------- results folder
     def new_output_dir(self) -> Path:
-        base = documents_dir()
+        base = results_root()
         name = Path(self.path).stem if self.path else "Results"
         stamp = datetime.now().strftime("%Y-%m-%d %H.%M")
         d = base / f"{safe_name(name)} – {stamp}"

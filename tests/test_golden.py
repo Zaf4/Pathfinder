@@ -44,7 +44,7 @@ def test_matches_original(case):
     path = TESTS / (case["file"] or case["directory"])
     exp = load_experiment(case["software"], path)
     setup = _setup(case)
-    geom = resolve_geometry(exp, setup, single_file=bool(case["file"]))
+    geom = resolve_geometry(exp, setup, single_file=bool(case["file"]), goal_method="legacy")
     results = analyze(exp, geom, setup, StrategyParams())
     headers, rows = result_rows(exp, results)
     got = [headers] + [[str(v) for v in r] for r in rows]
