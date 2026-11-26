@@ -8,6 +8,8 @@ This is a modernized fork of [MatthewBCooke/Pathfinder](https://github.com/Matth
 
 ## Install
 
+### Mac
+
 Open **Terminal** (press ⌘ Space, type `Terminal`, press Return), paste this line and press Return:
 
 ```bash
@@ -16,23 +18,36 @@ curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.sh |
 
 That's it. It takes a minute or two the first time. Pathfinder then opens by itself, and you'll find it in your **Applications** folder, Launchpad and Spotlight like any other app.
 
-- No administrator password, Homebrew, conda or Xcode needed. Everything goes into your home folder.
-- To update, run the same command again, or use **Help → Check for Updates** in the app.
-- Works on macOS 11+ (Apple Silicon and Intel) and Linux.
+- No administrator password, Homebrew, conda, git or Xcode needed, and no "unidentified developer" or "install developer tools" pop-ups. Everything goes into your home folder.
+- Works on macOS 11 or newer (Apple Silicon and Intel). The same command works on Linux.
 
-To uninstall:
+### Windows
+
+Press **Windows key + R**, paste this line and press Enter:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.ps1 | iex"
+```
+
+A blue window shows the progress, and Pathfinder opens by itself when it's done. It's in the **Start menu** and on your **desktop**. No administrator rights, Python, conda or git needed. Works on Windows 10 and 11.
+
+### Updating and uninstalling
+
+To update, use **Help → Check for Updates** in the app, or run the install command again.
+
+To uninstall on a Mac:
 
 ```bash
 curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/master/uninstall.sh | sh
 ```
 
-Your results in `Documents/Pathfinder` are kept.
+On Windows, go to **Settings → Apps**, find **Pathfinder** and click **Uninstall**. Either way, your results are kept.
 
 <details>
 <summary>Already use uv?</summary>
 
 ```bash
-uv tool install git+https://github.com/Zaf4/Pathfinder
+uv tool install "jsl-pathfinder @ https://github.com/Zaf4/Pathfinder/archive/refs/heads/master.zip"
 pathfinder
 ```
 </details>
@@ -47,7 +62,7 @@ pathfinder
    ![Results](docs/screenshots/light-4-summary.png)
    ![Heatmap](docs/screenshots/light-6-heatmap.png)
 
-Results go to `Documents/Pathfinder/<experiment> – <date time>/`:
+Results go to a **Pathfinder Results** folder in your home folder, one folder per run: `Pathfinder Results/<experiment> – <date time>/`. The **Show in Finder** / **Show in Explorer** button takes you there.
 
 | File | What it is |
 |---|---|

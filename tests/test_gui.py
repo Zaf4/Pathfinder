@@ -16,8 +16,8 @@ def isolated(tmp_path, monkeypatch):
     cfg = tmp_path / "config"
     cfg.mkdir()
     monkeypatch.setattr("pathfinder.gui.state.config_dir", lambda: cfg)
-    monkeypatch.setattr("pathfinder.gui.state.documents_dir", lambda: tmp_path / "Pathfinder")
-    monkeypatch.setattr("pathfinder.gui.app.documents_dir", lambda: tmp_path / "Pathfinder")
+    monkeypatch.setattr("pathfinder.gui.state.results_root", lambda: tmp_path / "Pathfinder")
+    monkeypatch.setattr("pathfinder.gui.app.results_root", lambda: tmp_path / "Pathfinder")
     # never open Finder/Excel/browser during tests
     monkeypatch.setattr("PySide6.QtGui.QDesktopServices.openUrl", lambda *a: True)
     monkeypatch.setattr("pathfinder.gui.results_page.reveal", lambda *a: None)

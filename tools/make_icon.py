@@ -1,6 +1,7 @@
 """Render the app icon (PNG sizes + macOS .icns). Run: uv run python tools/make_icon.py"""
 import math
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -56,11 +57,31 @@ def render(size: int) -> QImage:
     return img
 
 
+def write_ico(path: Path, sizes=(16, 24, 32, 48, 64, 128, 256)):
+    """Windows .ico with PNG-compressed entries (supported since Vista)."""
+    from PySide6.QtCore import QBuffer, QByteArray, QIODevice
+    blobs = []
+    for n in sizes:
+        ba = QByteArray()
+        buf = QBuffer(ba)
+        buf.open(QIODevice.WriteOnly)
+        render(n).save(buf, "PNG")
+        blobs.append(bytes(ba))
+    head = struct.pack("<HHH", 0, 1, len(sizes))
+    offset = 6 + 16 * len(sizes)
+    entries = b""
+    for n, b in zip(sizes, blobs):
+        entries += struct.pack("<BBBBHHII", n % 256, n % 256, 0, 0, 1, 32, len(b), offset)
+        offset += len(b)
+    path.write_bytes(head + entries + b"".join(blobs))
+
+
 if __name__ == "__main__":
     app = QGuiApplication(sys.argv)
     ASSETS.mkdir(parents=True, exist_ok=True)
     for size in (16, 32, 64, 128, 256, 512):
         render(size).save(str(ASSETS / f"icon_{size}.png"))
+    write_ico(ASSETS / "AppIcon.ico")
     if sys.platform == "darwin" and shutil.which("iconutil"):
         iconset = ROOT / "build/AppIcon.iconset"
         iconset.mkdir(parents=True, exist_ok=True)
