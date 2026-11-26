@@ -254,7 +254,7 @@ class MainWindow(QMainWindow):
         self.update_box.show()
         self.proc.finished.connect(self._updated)
         self.proc.start(uv, ["tool", "install", "--force", "--refresh-package", "jsl-pathfinder",
-                             "--python", "3.13", SOURCE])
+                             "--managed-python", "--python", "3.13", SOURCE])
 
     def _updated(self, code, _status):
         import re

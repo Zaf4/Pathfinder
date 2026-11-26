@@ -32,7 +32,9 @@ UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
 [ -x "$UV" ] || fail "uv was not installed."
 
 step "2/3  Installing Pathfinder (first time takes a minute)"
-"$UV" tool install --force --refresh-package jsl-pathfinder --python "$PY" "$SOURCE" || fail "installing Pathfinder failed."
+# --managed-python: always uv's own Python. A python.org "framework" Python on the Mac would
+# otherwise be reused, and it relaunches itself as "Python.app" (wrong Dock icon and name).
+"$UV" tool install --force --refresh-package jsl-pathfinder --managed-python --python "$PY" "$SOURCE" || fail "installing Pathfinder failed."
 BIN="$("$UV" tool dir --bin)/pathfinder"
 [ -x "$BIN" ] || fail "the pathfinder program is missing after install."
 

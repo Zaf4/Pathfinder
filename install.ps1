@@ -47,7 +47,7 @@ function Install-Pathfinder {
 
     Step '2/3  Installing Pathfinder (first time takes a minute)'
     $ErrorActionPreference = 'Continue'   # uv writes progress to stderr; that is not an error
-    & $uv tool install --force --refresh-package jsl-pathfinder --python $Py $Source
+    & $uv tool install --force --refresh-package jsl-pathfinder --managed-python --python $Py $Source
     $code = $LASTEXITCODE
     $BinDir = (& $uv tool dir --bin).Trim()
     $ToolDir = (& $uv tool dir).Trim()
