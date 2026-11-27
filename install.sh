@@ -29,7 +29,7 @@ bold() { printf '\033[1m%s\033[0m\n' "$1"; }
 step() { printf '\n\033[1;36m==>\033[0m \033[1m%s\033[0m\n' "$1"; }
 fail() { printf '\n\033[1;31mSomething went wrong:\033[0m %s\n' "$1" >&2; exit 1; }
 
-bold "Installing Pathfinder…"
+bold "Installing Pathfinder ${REF}…"
 
 export PATH="$HOME/.local/bin:$PATH"
 

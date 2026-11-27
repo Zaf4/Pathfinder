@@ -63,6 +63,14 @@ jobs:
             echo "app not running; running the program directly to show its error:"
             perl -e 'alarm 20; exec @ARGV' "$HOME/.local/bin/pathfinder" || true
             exit 1; }
+      - name: Install the latest release, exactly as users do (no branch given)
+        env:
+          PATHFINDER_NO_OPEN: "1"
+        run: |
+          curl -LsSf "https://raw.githubusercontent.com/Zaf4/Pathfinder/${{ github.head_ref || github.ref_name }}/install.sh" | sh
+          latest="$(curl -fsSL -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/Zaf4/Pathfinder/releases/latest | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+          echo "latest release: $latest"; ~/.local/bin/uv tool list
+          ~/.local/bin/uv tool list | grep -q "^jsl-pathfinder v$latest\$"
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: macos-screenshot, path: "${{ runner.temp }}/macos.png", if-no-files-found: ignore }
@@ -113,3 +121,16 @@ jobs:
           irm "https://raw.githubusercontent.com/Zaf4/Pathfinder/${{ github.head_ref || github.ref_name }}/uninstall.ps1" | iex
           if (Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) 'Pathfinder.lnk')) { throw 'shortcut left behind' }
           if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Pathfinder') { throw 'Apps entry left behind' }
+      - name: Install the latest release, exactly as users do (no branch given)
+        shell: powershell
+        env:
+          PATHFINDER_NO_OPEN: "1"
+          PATHFINDER_NO_PAUSE: "1"
+        run: |
+          irm "https://raw.githubusercontent.com/Zaf4/Pathfinder/${{ github.head_ref || github.ref_name }}/install.ps1" | iex
+          $latest = (Invoke-RestMethod -Headers @{ Authorization = "Bearer ${{ github.token }}" } 'https://api.github.com/repos/Zaf4/Pathfinder/releases/latest').tag_name
+          $uv = Join-Path $HOME '.local\bin\uv.exe'
+          $ErrorActionPreference = 'Continue'
+          $list = & $uv tool list 2>$null
+          Write-Host "latest release: $latest"; $list
+          if (-not ($list | Where-Object { $_ -eq "jsl-pathfinder v$latest" })) { throw "installed version is not $latest" }

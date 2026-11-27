@@ -36,7 +36,7 @@ function Install-Pathfinder {
         throw "Pathfinder install failed: $text"
     }
 
-    Write-Host 'Installing Pathfinder...' -ForegroundColor White
+    Write-Host "Installing Pathfinder $Ref..." -ForegroundColor White
 
     $LocalBin = Join-Path $HOME '.local\bin'
     $env:Path = "$LocalBin;$env:Path"
