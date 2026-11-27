@@ -1,16 +1,25 @@
 #!/bin/sh
 # Pathfinder installer for macOS and Linux.
 #
-#   curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/install.sh | sh
+#   curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.sh | sh
 #
 # Installs uv (a small Python manager) and Pathfinder into your home folder.
 # No administrator password, Homebrew, conda, git or Xcode needed. Run it again to update.
 set -eu
 
 REPO="https://github.com/Zaf4/Pathfinder"
-# The release this script installs (a tag). PATHFINDER_REF (or PATHFINDER_BRANCH) picks another
-# tag or a branch, e.g. PATHFINDER_REF=master for the latest development version.
-REF="${PATHFINDER_REF:-${PATHFINDER_BRANCH:-2.1.0}}"
+# Installs the latest published release, never unreleased development code. GitHub is asked
+# which release that is; if it can't be reached, FALLBACK is used. PATHFINDER_REF (or
+# PATHFINDER_BRANCH) picks a specific tag or branch instead, e.g. PATHFINDER_REF=master.
+FALLBACK="2.1.0"
+REF="${PATHFINDER_REF:-${PATHFINDER_BRANCH:-}}"
+if [ -z "$REF" ]; then
+  REF="$(curl -fsSL --max-time 15 https://api.github.com/repos/Zaf4/Pathfinder/releases/latest 2>/dev/null \
+    | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)" || REF=""
+fi
+case "$REF" in
+  ""|*[!A-Za-z0-9._/-]*) REF="$FALLBACK" ;;
+esac
 # A zip download on purpose: a git URL would need git, and on a stock Mac merely calling git
 # pops up "install the command line developer tools" and the install fails.
 SOURCE="${PATHFINDER_SOURCE:-jsl-pathfinder @ ${REPO}/archive/${REF}.zip}"

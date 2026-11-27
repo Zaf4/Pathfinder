@@ -13,7 +13,7 @@ This is a modernized fork of [MatthewBCooke/Pathfinder](https://github.com/Matth
 Open **Terminal** (press ⌘ Space, type `Terminal`, press Return), paste this line and press Return:
 
 ```bash
-curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.sh | sh
 ```
 
 That's it. It takes a minute or two the first time. Pathfinder then opens by itself, and you'll find it in your **Applications** folder, Launchpad and Spotlight like any other app.
@@ -26,7 +26,7 @@ That's it. It takes a minute or two the first time. Pathfinder then opens by its
 Press **Windows key + R**, paste this line and press Enter:
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/install.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.ps1 | iex"
 ```
 
 A blue window shows the progress, and Pathfinder opens by itself when it's done. It's in the **Start menu** and on your **desktop**. No administrator rights, Python, conda or git needed. Works on Windows 10 and 11.
@@ -38,7 +38,7 @@ To update, use **Help → Check for Updates** in the app, or run the install com
 To uninstall on a Mac:
 
 ```bash
-curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/uninstall.sh | sh
+curl -LsSf https://raw.githubusercontent.com/Zaf4/Pathfinder/master/uninstall.sh | sh
 ```
 
 On Windows, go to **Settings → Apps**, find **Pathfinder** and click **Uninstall**. Either way, your results are kept.
@@ -47,7 +47,7 @@ On Windows, go to **Settings → Apps**, find **Pathfinder** and click **Uninsta
 <summary>Already use uv?</summary>
 
 ```bash
-uv tool install "jsl-pathfinder @ https://github.com/Zaf4/Pathfinder/archive/2.1.0.zip"
+uv tool install "jsl-pathfinder @ https://github.com/Zaf4/Pathfinder/archive/2.1.0.zip"  # or any release tag
 pathfinder
 ```
 </details>
