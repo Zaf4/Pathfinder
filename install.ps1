@@ -1,6 +1,6 @@
 # Pathfinder installer for Windows 10/11.
 #
-#   powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/2.1.0/install.ps1 | iex"
+#   powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Zaf4/Pathfinder/master/install.ps1 | iex"
 #
 # Installs uv (a small Python manager) and Pathfinder into your user folder, then adds
 # Pathfinder to the Start menu, the desktop and Settings > Apps. No administrator rights,
@@ -14,9 +14,15 @@ function Install-Pathfinder {
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
     $Repo   = 'https://github.com/Zaf4/Pathfinder'
-    # The release this script installs (a tag). PATHFINDER_REF (or PATHFINDER_BRANCH) picks
-    # another tag or a branch, e.g. 'master' for the latest development version.
-    $Ref    = if ($env:PATHFINDER_REF) { $env:PATHFINDER_REF } elseif ($env:PATHFINDER_BRANCH) { $env:PATHFINDER_BRANCH } else { '2.1.0' }
+    # Installs the latest published release, never unreleased development code. GitHub is asked
+    # which release that is; if it can't be reached, $Fallback is used. PATHFINDER_REF (or
+    # PATHFINDER_BRANCH) picks a specific tag or branch instead, e.g. 'master'.
+    $Fallback = '2.1.0'
+    $Ref = if ($env:PATHFINDER_REF) { $env:PATHFINDER_REF } elseif ($env:PATHFINDER_BRANCH) { $env:PATHFINDER_BRANCH } else { '' }
+    if (-not $Ref) {
+        try { $Ref = [string](Invoke-RestMethod -Uri 'https://api.github.com/repos/Zaf4/Pathfinder/releases/latest' -TimeoutSec 15).tag_name } catch { $Ref = '' }
+    }
+    if (-not $Ref -or $Ref -notmatch '^[A-Za-z0-9._/-]+$') { $Ref = $Fallback }
     $Source = if ($env:PATHFINDER_SOURCE) { $env:PATHFINDER_SOURCE } else { "jsl-pathfinder @ $Repo/archive/$Ref.zip" }
     $Py     = '3.13'
     $Raw    = "https://raw.githubusercontent.com/Zaf4/Pathfinder/$Ref"
@@ -30,7 +36,7 @@ function Install-Pathfinder {
         throw "Pathfinder install failed: $text"
     }
 
-    Write-Host 'Installing Pathfinder...' -ForegroundColor White
+    Write-Host "Installing Pathfinder $Ref..." -ForegroundColor White
 
     $LocalBin = Join-Path $HOME '.local\bin'
     $env:Path = "$LocalBin;$env:Path"
